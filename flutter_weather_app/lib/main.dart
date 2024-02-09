@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 
+import 'package:http/http.dart' as http;
+import 'dart:async';
+import 'dart:convert';
+
+
+
 void main() {
   runApp(const MyApp());
 }
@@ -7,7 +13,7 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -32,6 +38,84 @@ class weatherApp extends StatefulWidget {
 
 class _weatherAppState extends State<weatherApp> {
 
+  Future<void> getWeatherData() async {
+
+    /***
+     *
+     *  final url = Uri.parse('https://forecast9.p.rapidapi.com/rapidapi/forecast/%C4%B0stanbul/hourly/ HTTP/1.1');
+        final headers = {
+        'X-Rapidapi-Key': '4f00233679msh4cf647fb1efdcb9p1c15afjsn36d3340fa61c',
+        'X-Rapidapi-Host': 'forecast9.p.rapidapi.com',
+        'Host': 'forecast9.p.rapidapi.com',
+        };
+     *
+     */
+
+    final Map<String, dynamic> istanbul_map = {};
+    final Map<String, dynamic> ankara_map = {};
+    final Map<String, dynamic> izmir_map = {};
+
+    final url_istanbul = Uri.parse(
+        'https://api.open-meteo.com/v1/forecast?latitude=39.9199&longitude=32.8543&hourly=pressure_msl,cloudcover_mid,visibility,windspeed_120m,temperature_180m,soil_moisture_3_9cm&timezone=Europe%2FLondon');
+    final url_ankara = Uri.parse(
+        'https://api.open-meteo.com/v1/forecast?latitude=39.9199&longitude=32.8543&hourly=pressure_msl,cloudcover_mid,visibility,windspeed_120m,temperature_180m,soil_moisture_3_9cm&timezone=Europe%2FLondon');
+    final url_izmir = Uri.parse(
+        'https://api.open-meteo.com/v1/forecast?latitude=38.4127&longitude=27.1384&hourly=pressure_msl,cloudcover_mid,visibility,windspeed_120m,temperature_180m,soil_moisture_3_9cm&timezone=Europe%2FLondon');
+    try {
+
+      final response_istanbul = await http.get(url_istanbul);
+      final response_ankara = await http.get(url_ankara);
+      final response_izmir = await http.get(url_izmir);
+
+      if (response_istanbul.statusCode == 200 &&
+          response_ankara.statusCode == 200 &&
+          response_izmir.statusCode == 200) {
+        // Successful response status (HTTP 200 OK)
+        final Map<String, dynamic> MAP_DATA_ISTANBUL =
+        jsonDecode(response_istanbul.body);
+        final Map<String, dynamic> MAP_DATA_ANKARA =
+        jsonDecode(response_ankara.body);
+        final Map<String, dynamic> MAP_DATA_IZMIR =
+        jsonDecode(response_izmir.body);
+
+        istanbul_map["visibility"] =
+        MAP_DATA_ISTANBUL["hourly"]["visibility"][0];
+        istanbul_map["pressure"] =
+        MAP_DATA_ISTANBUL["hourly"]["pressure_msl"][0];
+        istanbul_map["moisture"] =
+        MAP_DATA_ISTANBUL["hourly"]["soil_moisture_3_9cm"][0];
+        istanbul_map["temperature"] =
+        MAP_DATA_ISTANBUL["hourly"]["temperature_180m"][0];
+
+        ankara_map["visibility"] = MAP_DATA_ANKARA["hourly"]["visibility"][0];
+        ankara_map["pressure"] = MAP_DATA_ANKARA["hourly"]["pressure_msl"][0];
+        ankara_map["moisture"] =
+        MAP_DATA_ANKARA["hourly"]["soil_moisture_3_9cm"][0];
+        ankara_map["temperature"] =
+        MAP_DATA_ANKARA["hourly"]["temperature_180m"][0];
+
+        izmir_map["visibility"] = MAP_DATA_IZMIR["hourly"]["visibility"][0];
+        izmir_map["pressure"] = MAP_DATA_IZMIR["hourly"]["pressure_msl"][0];
+        izmir_map["moisture"] =
+        MAP_DATA_IZMIR["hourly"]["soil_moisture_3_9cm"][0];
+        izmir_map["temperature"] =
+        MAP_DATA_IZMIR["hourly"]["temperature_180m"][0];
+
+        setState(() {
+          weathers_data["Istanbul"] = istanbul_map;
+          weathers_data["Ankara"] = ankara_map;
+          weathers_data["Izmir"] = izmir_map;
+          print("Fetching Done");
+        });
+      } else {
+        // Unsuccessful Api Response
+        print('API isteği başarısız oldu. ');
+      }
+    } catch (e) {
+      print('Hata oluştu: $e');
+    }
+  }
+
   Map<String, Map> weathers_data = {
     "Istanbul": {},
     "Ankara": {},
@@ -47,7 +131,7 @@ class _weatherAppState extends State<weatherApp> {
   void initState() {
     // TODO: implement initState
 
-
+    getWeatherData();
   }
 
   @override
