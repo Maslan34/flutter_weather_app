@@ -1,10 +1,9 @@
-import 'package:flutter/material.dart';
-
-import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'dart:convert';
 
-
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:lottie/lottie.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,7 +12,7 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-
+  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -37,8 +36,27 @@ class weatherApp extends StatefulWidget {
 }
 
 class _weatherAppState extends State<weatherApp> {
+  /**!!!!!!!!!!
+   *
+   *
+   *   BIR CLASSIN STATIC FONKSIYONUNA BUILD ICINDEN ERISIM SAGLANIR
+   *
+   * !!!!!!!!!!!
+   *
+   *
+   */
 
   Future<void> getWeatherData() async {
+    /**
+     * API KAYNAĞI :https://open-meteo.com/
+     */
+
+    /***
+     *
+     *
+     * Headers Parametreleriyle birlikte api gönderilecek istek özelleştiriliyor.
+     *
+     */
 
     /***
      *
@@ -70,14 +88,14 @@ class _weatherAppState extends State<weatherApp> {
       if (response_istanbul.statusCode == 200 &&
           response_ankara.statusCode == 200 &&
           response_izmir.statusCode == 200) {
-        // Successful response status (HTTP 200 OK)
+        // Başarılı yanıt durumu (HTTP 200 OK)
         final Map<String, dynamic> MAP_DATA_ISTANBUL =
         jsonDecode(response_istanbul.body);
         final Map<String, dynamic> MAP_DATA_ANKARA =
         jsonDecode(response_ankara.body);
         final Map<String, dynamic> MAP_DATA_IZMIR =
         jsonDecode(response_izmir.body);
-
+        // responseBody'den gelen verileri işleyin
         istanbul_map["visibility"] =
         MAP_DATA_ISTANBUL["hourly"]["visibility"][0];
         istanbul_map["pressure"] =
@@ -105,13 +123,13 @@ class _weatherAppState extends State<weatherApp> {
           weathers_data["Istanbul"] = istanbul_map;
           weathers_data["Ankara"] = ankara_map;
           weathers_data["Izmir"] = izmir_map;
-          print("Fetching Done");
         });
       } else {
-        // Unsuccessful Api Response
+        // API isteği başarısız oldu
         print('API isteği başarısız oldu. ');
       }
     } catch (e) {
+      // Hata durumları
       print('Hata oluştu: $e');
     }
   }
@@ -125,13 +143,17 @@ class _weatherAppState extends State<weatherApp> {
   int currentPageIndex = 0;
   final pageController = PageController(initialPage: 0);
 
+
+
+
   final bool isNight = DateTime.now().hour > 19 ? true :false;
+
 
   @override
   void initState() {
     // TODO: implement initState
-
     getWeatherData();
+
   }
 
   @override
@@ -158,7 +180,9 @@ class _weatherAppState extends State<weatherApp> {
                       right: 0,
                       width: 420,
 
-                      child: Container() ),
+                      child:  isNight ? LottieBuilder.asset(
+                          "lib/assets/background_night.json") : LottieBuilder.asset(
+                          "lib/assets/background_daytime.json") ),
                   weatherPage(weathers_data, index),
                 ]);
               },
@@ -235,8 +259,24 @@ class _weatherPageState extends State<weatherPage> {
 
   @override
   void initState() {
+    // TODO: implement initState
+    super.initState();
+    Timer.periodic(Duration(milliseconds: 10), (timer) {
+      setState(() {
+        if(offset1 <60 && offset2==-40 )
+          offset1 +=1.0; // SAĞA DOĞRU ILERLEME
+        else if(offset2 <60 && offset1 == 60)
+          offset2 +=1.0; // AŞAĞIYA DOĞRU ILERLEME
+        else if(offset1>-60 && offset2 == 60)
+          offset1--; // SOLA DOĞRU ILERLEME
+        else if(offset1==-60 && offset2>-40)
+          offset2--; // YUKARI DOĞRU ILERLEME
+
+        // 45 derece döndürme
 
 
+      });
+    });
   }
   @override
   Widget build(BuildContext context) {
@@ -292,11 +332,31 @@ class _weatherPageState extends State<weatherPage> {
                         children: [
                           SizedBox(
                               height: 70,
-                              ),
-                          Text("City Name"),
+                              child: makeAnimation(
+                                  widget.weather[widget.weather.keys.toList()[widget.index]]
+                                  ["temperature"])),
+                          Text("${widget.weather.keys.toList()[widget.index]}"),
                           Text(
-                              "number"),
-                          Text("condition")
+                              "${widget.weather[widget.weather.keys.toList()[widget.index]]["temperature"]} \u2103"),
+                          Text(widget.weather[widget.weather.keys.toList()[widget.index]]
+                          ["temperature"] <
+                              0
+                              ? "Karlı "
+                              : widget.weather[widget.weather.keys.toList()[widget.index]]
+                          ["temperature"] >
+                              0 &&
+                              widget.weather[widget.weather.keys.toList()[widget.index]]
+                              ["temperature"] <
+                                  10
+                              ? "Yağmurlu "
+                              : widget.weather[widget.weather.keys.toList()[widget.index]]
+                          ["temperature"] >
+                              10 &&
+                              widget.weather[widget.weather.keys.toList()[widget.index]]
+                              ["temperature"] <
+                                  20
+                              ? "Bulutlu"
+                              : "Güneşli")
                         ],
                       ),
                     ),
@@ -336,31 +396,31 @@ class _weatherPageState extends State<weatherPage> {
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                        "Pressure:"),
+                                        "Basınç:${widget.weather[widget.weather.keys.toList()[widget.index]]["visibility"]}"),
                                     Text(
-                                        "Pressure:")
+                                        "Pressure:${widget.weather[widget.weather.keys.toList()[widget.index]]["pressure"]}")
                                   ],
                                 ),
                                 Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                          "Moisture:"),
-                                      Text("Pressure:"),
+                                          "Moisture:${widget.weather[widget.weather.keys.toList()[widget.index]]["moisture"]}"),
+                                      Text("Basınç:12312"),
 
                                     ]),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text("Pressure:12"),
-                                    Text("Pressure:12312"),
+                                    Text("Basınç:12"),
+                                    Text("Basınç:12312"),
                                   ],
                                 ),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text("Pressure:123123"),
-                                    Text("Pressure:123"),
+                                    Text("Basınç:123123"),
+                                    Text("Basınç:123"),
                                   ],
                                 )]);
                         }
@@ -370,15 +430,43 @@ class _weatherPageState extends State<weatherPage> {
                             children: [
                               SizedBox(
                                   height: 70,
-                                  ),
-                              Text("index not 0"),
+                                  child: makeAnimation(
+                                      widget.weather[widget.weather.keys.toList()[widget.index]]
+                                      ["temperature"])),
+                              Text("${widget.weather.keys.toList()[widget.index]}"),
                               Text(
-                                  "index not 0"),
-                              Text("index noott 0")
+                                  "${widget.weather[widget.weather.keys.toList()[widget.index]]["temperature"]} \u2103"),
+                              Text(widget.weather[widget.weather.keys.toList()[widget.index]]
+                              ["temperature"] <
+                                  0
+                                  ? "Karlı "
+                                  : widget.weather[widget.weather.keys.toList()[widget.index]]
+                              ["temperature"] >
+                                  0 &&
+                                  widget.weather[widget.weather.keys.toList()[widget.index]]
+                                  ["temperature"] <
+                                      10
+                                  ? "Yağmurlu "
+                                  : widget.weather[widget.weather.keys.toList()[widget.index]]
+                              ["temperature"] >
+                                  10 &&
+                                  widget.weather[widget.weather.keys.toList()[widget.index]]
+                                  ["temperature"] <
+                                      20
+                                  ? "Bulutlu"
+                                  : "Güneşli")
                             ],
                           );
 
+
+
+
+
+
+
                         }
+
+
 
                       }),
                 ),
@@ -390,5 +478,25 @@ class _weatherPageState extends State<weatherPage> {
       ],
     );
   }
+}
+
+LottieBuilder makeAnimation(double degree) {
+  print(degree.runtimeType);
+
+  if (degree < 0)
+    return Lottie.asset("lib/assets/snowy.json");
+  else if (degree > 0 && degree < 10)
+    return Lottie.asset("lib/assets/rainy.json");
+  else if (degree > 10 && degree < 20)
+    return Lottie.asset("lib/assets/cloudly.json");
+  else
+    return Lottie.asset("lib/assets/sunny.json");
+}
+
+class weathers {
+  String place;
+  int degree;
+
+  weathers(this.degree, this.place);
 }
 
