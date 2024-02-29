@@ -12,7 +12,6 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -36,25 +35,24 @@ class weatherApp extends StatefulWidget {
 }
 
 class _weatherAppState extends State<weatherApp> {
-  /**!!!!!!!!!!
-   *
-   *
-   *   BIR CLASSIN STATIC FONKSIYONUNA BUILD ICINDEN ERISIM SAGLANIR
-   *
-   * !!!!!!!!!!!
-   *
-   *
-   */
 
-  Future<void> getWeatherData() async {
+  Future<void>? _weatherDataFuture;
+
+  Map<String, Map> weathers_data_rvalue = {
+    "Istanbul": {},
+    "Ankara": {},
+    "Izmir": {},
+  };
+
+  Future<Map<String, Map>> getWeatherData() async {
     /**
-     * API KAYNAĞI :https://open-meteo.com/
+     * API SOURCE :https://open-meteo.com/
      */
 
     /***
      *
      *
-     * Headers Parametreleriyle birlikte api gönderilecek istek özelleştiriliyor.
+     * additional headers params.
      *
      */
 
@@ -73,6 +71,10 @@ class _weatherAppState extends State<weatherApp> {
     final Map<String, dynamic> ankara_map = {};
     final Map<String, dynamic> izmir_map = {};
 
+
+
+
+
     final url_istanbul = Uri.parse(
         'https://api.open-meteo.com/v1/forecast?latitude=39.9199&longitude=32.8543&hourly=pressure_msl,cloudcover_mid,visibility,windspeed_120m,temperature_180m,soil_moisture_3_9cm&timezone=Europe%2FLondon');
     final url_ankara = Uri.parse(
@@ -88,14 +90,14 @@ class _weatherAppState extends State<weatherApp> {
       if (response_istanbul.statusCode == 200 &&
           response_ankara.statusCode == 200 &&
           response_izmir.statusCode == 200) {
-        // Başarılı yanıt durumu (HTTP 200 OK)
+        // Successful response status (HTTP 200 OK)
         final Map<String, dynamic> MAP_DATA_ISTANBUL =
         jsonDecode(response_istanbul.body);
         final Map<String, dynamic> MAP_DATA_ANKARA =
         jsonDecode(response_ankara.body);
         final Map<String, dynamic> MAP_DATA_IZMIR =
         jsonDecode(response_izmir.body);
-        // responseBody'den gelen verileri işleyin
+        //processing data from response
         istanbul_map["visibility"] =
         MAP_DATA_ISTANBUL["hourly"]["visibility"][0];
         istanbul_map["pressure"] =
@@ -120,116 +122,137 @@ class _weatherAppState extends State<weatherApp> {
         MAP_DATA_IZMIR["hourly"]["temperature_180m"][0];
 
         setState(() {
-          weathers_data["Istanbul"] = istanbul_map;
-          weathers_data["Ankara"] = ankara_map;
-          weathers_data["Izmir"] = izmir_map;
+          weathers_data_rvalue["Istanbul"] = istanbul_map;
+          weathers_data_rvalue["Ankara"] = ankara_map;
+          weathers_data_rvalue["Izmir"] = izmir_map;
+
         });
       } else {
-        // API isteği başarısız oldu
+        // API request failed
         print('API isteği başarısız oldu. ');
       }
     } catch (e) {
-      // Hata durumları
+      // Error situations
       print('Hata oluştu: $e');
     }
+    return weathers_data_rvalue;
   }
 
-  Map<String, Map> weathers_data = {
-    "Istanbul": {},
-    "Ankara": {},
-    "Izmir": {},
-  };
 
   int currentPageIndex = 0;
   final pageController = PageController(initialPage: 0);
-
-
-
-
   final bool isNight = DateTime.now().hour > 19 ? true :false;
-
 
   @override
   void initState() {
     // TODO: implement initState
-    getWeatherData();
+    super.initState();
+    _weatherDataFuture = getWeatherData();
 
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: Center(
-          child: Stack(children: [
-            PageView.builder(
-              controller: pageController,
-              onPageChanged: (int page) {
-                setState(() {
-                  currentPageIndex = page;
-                });
-              },
-              itemCount: weathers_data.length,
-              itemBuilder: (context, index) {
-                return Stack(children: [
-                  Positioned(
-                      top:0,
-                      right: 0,
-                      width: 420,
+    return FutureBuilder(
+      future: _weatherDataFuture,
+      builder: (context, snapshot) {
 
-                      child:  isNight ? LottieBuilder.asset(
-                          "lib/assets/background_night.json") : LottieBuilder.asset(
-                          "lib/assets/background_daytime.json") ),
-                  weatherPage(weathers_data, index),
-                ]);
-              },
+        if (snapshot.hasError) return Scaffold(
+            appBar: AppBar(
+              backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+              title: Text(widget.title),
             ),
-            Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: 50,
-                child: Opacity(
-                  opacity: 0.6,
-                  child: Container(
-                    color: Colors.deepPurple,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ...List<Widget>.generate(
-                          weathers_data.length,
-                              (index) => Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 20),
-                            child: InkWell(
-                              onTap: () {
-                                //print(index);
-                                //print(currentPageIndex);
+            body: Center(
 
-                                pageController.animateToPage(index,
-                                    duration: Duration(seconds: 1),
-                                    curve: Curves.easeIn);
-                              },
-                              child: AnimatedContainer(
-                                width: currentPageIndex == index ? 40 : 20,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: currentPageIndex == index
-                                      ? Colors.black87
-                                      : Colors.white,
+              child: Text("There is a error about fetching data."),
+
+            ));
+        else if (snapshot.hasData) return Scaffold(
+          appBar: AppBar(
+            backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+            title: Text(widget.title),
+          ),
+          body: Center(
+              child: Stack(children: [
+                PageView.builder(
+                  controller: pageController,
+                  onPageChanged: (int page) {
+                    setState(() {
+                      currentPageIndex = page;
+                    });
+                  },
+                  itemCount: weathers_data_rvalue.length,
+                  itemBuilder: (context, index) {
+                    return Stack(children: [
+                      Positioned(
+                          top:0,
+                          right: 0,
+                          width: 420,
+
+                          child:  isNight ? LottieBuilder.asset(
+                              "lib/assets/background_night.json") : LottieBuilder.asset(
+                              "lib/assets/background_daytime.json") ),
+                      weatherPage(weathers_data_rvalue, index),
+                    ]);
+                  },
+                ),
+                Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: 50,
+                    child: Opacity(
+                      opacity: 0.6,
+                      child: Container(
+                        color: Colors.deepPurple,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ...List<Widget>.generate(
+                              weathers_data_rvalue.length,
+                                  (index) => Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 20),
+                                child: InkWell(
+                                  onTap: () {
+                                    //print(index);
+                                    //print(currentPageIndex);
+
+                                    pageController.animateToPage(index,
+                                        duration: Duration(seconds: 1),
+                                        curve: Curves.easeIn);
+                                  },
+                                  child: AnimatedContainer(
+                                    width: currentPageIndex == index ? 40 : 20,
+                                    decoration: BoxDecoration(shape: BoxShape.circle,
+                                        color: currentPageIndex == index ? Colors.black87 : Colors.white),
+                                    duration: Duration(microseconds: 200),
+                                  ),
                                 ),
-                                duration: Duration(microseconds: 200),
                               ),
-                            ),
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                ))
-          ])),
+                            )
+                          ],
+                        ),
+                      ),
+                    ))
+              ])),
+        );
+        // Aksi halde, yükleniyor göstergesini göster
+        else  return Scaffold(
+          appBar: AppBar(
+            backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+            title: Text(widget.title),
+          ),
+          body: Center(
+
+            child: CircularProgressIndicator(),
+
+                ),
+
+
+        );
+      },
+
+
     );
   }
 }
@@ -264,15 +287,15 @@ class _weatherPageState extends State<weatherPage> {
     Timer.periodic(Duration(milliseconds: 10), (timer) {
       setState(() {
         if(offset1 <60 && offset2==-40 )
-          offset1 +=1.0; // SAĞA DOĞRU ILERLEME
+          offset1 +=1.0; // PROCEEDING TOWARDS THE RIGHT
         else if(offset2 <60 && offset1 == 60)
-          offset2 +=1.0; // AŞAĞIYA DOĞRU ILERLEME
+          offset2 +=1.0; // PROCEEDING TOWARDS THE BOTTOM
         else if(offset1>-60 && offset2 == 60)
-          offset1--; // SOLA DOĞRU ILERLEME
+          offset1--; // PROCEEDING TOWARDS THE LEFT
         else if(offset1==-60 && offset2>-40)
-          offset2--; // YUKARI DOĞRU ILERLEME
+          offset2--; // PROCEEDING TOWARDS THE UP
 
-        // 45 derece döndürme
+        // rotate 45 degrees
 
 
       });
@@ -323,7 +346,7 @@ class _weatherPageState extends State<weatherPage> {
                           BoxShadow(
                             color: Colors.white60,
                             blurRadius: 30.0,
-                            offset: Offset(offset1, offset2), // Bu satırın yönünü ayarlar
+                            offset: Offset(offset1, offset2), // Sets the direction of this line
                           ),
                         ],
                       ),
@@ -341,22 +364,22 @@ class _weatherPageState extends State<weatherPage> {
                           Text(widget.weather[widget.weather.keys.toList()[widget.index]]
                           ["temperature"] <
                               0
-                              ? "Karlı "
+                              ? "Snowy "
                               : widget.weather[widget.weather.keys.toList()[widget.index]]
                           ["temperature"] >
                               0 &&
                               widget.weather[widget.weather.keys.toList()[widget.index]]
                               ["temperature"] <
                                   10
-                              ? "Yağmurlu "
+                              ? "Rainy "
                               : widget.weather[widget.weather.keys.toList()[widget.index]]
                           ["temperature"] >
                               10 &&
                               widget.weather[widget.weather.keys.toList()[widget.index]]
                               ["temperature"] <
                                   20
-                              ? "Bulutlu"
-                              : "Güneşli")
+                              ? "Cloudy"
+                              : ",Sunny")
                         ],
                       ),
                     ),
@@ -396,7 +419,7 @@ class _weatherPageState extends State<weatherPage> {
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                        "Basınç:${widget.weather[widget.weather.keys.toList()[widget.index]]["visibility"]}"),
+                                        "Visibility:${widget.weather[widget.weather.keys.toList()[widget.index]]["visibility"]}"),
                                     Text(
                                         "Pressure:${widget.weather[widget.weather.keys.toList()[widget.index]]["pressure"]}")
                                   ],
@@ -406,21 +429,21 @@ class _weatherPageState extends State<weatherPage> {
                                     children: [
                                       Text(
                                           "Moisture:${widget.weather[widget.weather.keys.toList()[widget.index]]["moisture"]}"),
-                                      Text("Basınç:12312"),
+                                      Text("Pressure:12312"),
 
                                     ]),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text("Basınç:12"),
-                                    Text("Basınç:12312"),
+                                    Text("Pressure:12"),
+                                    Text("Pressure:12312"),
                                   ],
                                 ),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text("Basınç:123123"),
-                                    Text("Basınç:123"),
+                                    Text("Pressure:123123"),
+                                    Text("Pressure:123"),
                                   ],
                                 )]);
                         }
@@ -439,30 +462,24 @@ class _weatherPageState extends State<weatherPage> {
                               Text(widget.weather[widget.weather.keys.toList()[widget.index]]
                               ["temperature"] <
                                   0
-                                  ? "Karlı "
+                                  ? "Snowy "
                                   : widget.weather[widget.weather.keys.toList()[widget.index]]
                               ["temperature"] >
                                   0 &&
                                   widget.weather[widget.weather.keys.toList()[widget.index]]
                                   ["temperature"] <
                                       10
-                                  ? "Yağmurlu "
+                                  ? "Rainy "
                                   : widget.weather[widget.weather.keys.toList()[widget.index]]
                               ["temperature"] >
                                   10 &&
                                   widget.weather[widget.weather.keys.toList()[widget.index]]
                                   ["temperature"] <
                                       20
-                                  ? "Bulutlu"
-                                  : "Güneşli")
+                                  ? "Cloudy"
+                                  : "Sunny")
                             ],
                           );
-
-
-
-
-
-
 
                         }
 
@@ -481,7 +498,7 @@ class _weatherPageState extends State<weatherPage> {
 }
 
 LottieBuilder makeAnimation(double degree) {
-  print(degree.runtimeType);
+  //print(degree.runtimeType);
 
   if (degree < 0)
     return Lottie.asset("lib/assets/snowy.json");
